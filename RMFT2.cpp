@@ -17,7 +17,7 @@
  *  along with CommandStation.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include <Arduino.h>
-#include "RMFT.h"
+#include "RMFT2.h"
 #include "DCC.h"
 #include "DIAG.h"
 #include "WiThrottle.h"
@@ -44,27 +44,42 @@ const int HASH_KEYWORD_STATUS=-25932;
 // The thrrads exist in a ring, each time through loop() the next thread in the ring is serviced.
 
 // Statics 
-int RMFT::progtrackLocoId;  // used for callback when detecting a loco on prograck
-bool RMFT::diag=false;      // <D RMFT ON>  
-RMFT * RMFT::loopTask=NULL; // loopTask contains the address of ONE of the tasks in a ring.
-RMFT * RMFT::pausingTask=NULL; // Task causing a PAUSE. 
+int RMFT2::progtrackLocoId;  // used for callback when detecting a loco on prograck
+bool RMFT2::diag=false;      // <D RMFT ON>  
+RMFT2 * RMFT2::loopTask=NULL; // loopTask contains the address of ONE of the tasks in a ring.
+RMFT2 * RMFT2::pausingTask=NULL; // Task causing a PAUSE. 
  // when pausingTask is set, that is the ONLY task that gets any service,
  // and all others will have their locos stopped, then resumed after the pausing task resumes.
 
 
-/* static */ void RMFT::begin() {
+/* static */ void RMFT2::begin() { 
   DIAG(F("\nRMFT begin\n"));
-  DCCEXParser::setRMFTFilter(RMFT::ComandFilter);
-  new RMFT(0); // add the startup route
+  RMFT2::runMySetup();   //This is created in the RMFT.h when .ino is compiled
+  DCCEXParser::setRMFTFilter(RMFT2::ComandFilter);
+  new RMFT2(0); // add the startup route
   DIAG(F("\nRMFT ready\n"));
 }
 
+#include <stdarg.h>
+ void RMFT2::setupCommands(const __FlashStringHelper* cmd...) {
+  va_list args;
+  va_start(args, cmd);
+  char* next=(char *)cmd;
+  DCCEXParser parser;
+  while(next) {
+      int size=strlen_P(next)+1; 
+      char buffer[size];
+      strcpy_P(buffer,next);
+      parser.parse(&Serial,(byte *)buffer,true);
+      next=(char*)va_arg(args, char*);
+  }
+ }
 
 
 // This filter intercepst <> commands to do the following:
 // - Implement RMFT specific commands/diagnostics 
 // - Reject/modify JMRI commands that would interfere with RMFT processing 
-void RMFT::ComandFilter(Print * stream, byte & opcode, byte & paramCount, int p[]) {
+void RMFT2::ComandFilter(Print * stream, byte & opcode, byte & paramCount, int p[]) {
     (void)stream; // avoid compiler warning if we don't access this parameter 
     bool reject=false;
     switch(opcode) {
@@ -103,13 +118,13 @@ void RMFT::ComandFilter(Print * stream, byte & opcode, byte & paramCount, int p[
      }
 }
      
-bool RMFT::parseSlash(Print * stream, byte & paramCount, int p[]) {
+bool RMFT2::parseSlash(Print * stream, byte & paramCount, int p[]) {
           
           switch (p[0]) {
             case HASH_KEYWORD_PAUSE: // </ PAUSE>
                  if (paramCount!=1) return false;
                  DCC::setThrottle(0,1,true);  // pause all locos on the track         
-                 pausingTask=(RMFT *)1; // Impossible task address
+                 pausingTask=(RMFT2 *)1; // Impossible task address
                  return true;
                  
             case HASH_KEYWORD_RESUME: // </ RESUME>
@@ -121,7 +136,7 @@ bool RMFT::parseSlash(Print * stream, byte & paramCount, int p[]) {
                  if (paramCount!=1) return false;
                  StringFormatter::send(stream, F("\nRMFT STATUS"));
                  {
-                  RMFT * task=loopTask;
+                  RMFT2 * task=loopTask;
                   while(task) {
                       StringFormatter::send(stream,F("\nPC=%d,DT=%d,LOCO=%d%c,SPEED=%d%c"),
                             task->progCounter,task->delayTime,task->loco,
@@ -140,7 +155,7 @@ bool RMFT::parseSlash(Print * stream, byte & paramCount, int p[]) {
             case HASH_KEYWORD_SCHEDULE: // </ SCHEDULE [cab] route >
                  if (paramCount<2 || paramCount>3) return false;
                  {                 
-                  RMFT * newt=new RMFT((paramCount==2) ? p[1] : p[2]);
+                  RMFT2 * newt=new RMFT2((paramCount==2) ? p[1] : p[2]);
                   newt->loco=(paramCount==2)? 0 : p[1];                    
                   newt->speedo=0;
                   newt->forward=true;
@@ -187,7 +202,7 @@ bool RMFT::parseSlash(Print * stream, byte & paramCount, int p[]) {
     }
 
 
-RMFT::RMFT(byte route) {
+RMFT2::RMFT2(byte route) {
   progCounter=locateRouteStart(route);
   delayTime=0;
   loco=0;
@@ -206,9 +221,9 @@ RMFT::RMFT(byte route) {
   
   if (diag) DIAG(F("\nRMFT created for Route %d at prog %d, next=%x, loopTask=%x\n"),route,progCounter,next,loopTask);
 }
-RMFT::~RMFT() {
+RMFT2::~RMFT2() {
   if (next==this) loopTask=NULL;
-  else for (RMFT* ring=next;;ring=ring->next) if (ring->next == this) {
+  else for (RMFT2* ring=next;;ring=ring->next) if (ring->next == this) {
            ring->next=next;
            loopTask=next;
            break;
@@ -216,33 +231,33 @@ RMFT::~RMFT() {
 }
 
 
-int RMFT::locateRouteStart(short _route) {
+int RMFT2::locateRouteStart(short _route) {
   if (_route==0) return 0; // Route 0 is always start of ROUTES for default startup 
   for (int pcounter=0;;pcounter+=2) {
-    byte opcode=pgm_read_byte_near(RMFT::RouteCode+pcounter);
+    byte opcode=pgm_read_byte_near(RMFT2::RouteCode+pcounter);
     if (opcode==OPCODE_ENDROUTES) return -1;
-    if (opcode==OPCODE_ROUTE) if( _route==pgm_read_byte_near(RMFT::RouteCode+pcounter+1)) return pcounter;
+    if (opcode==OPCODE_ROUTE) if( _route==pgm_read_byte_near(RMFT2::RouteCode+pcounter+1)) return pcounter;
   }
 }
 
 
-void RMFT::driveLoco(byte speed) {
+void RMFT2::driveLoco(byte speed) {
      if (loco<0) return;  // Caution, allows broadcast! 
      DCC::setThrottle(loco,speed, forward^invert);
      // TODO... if broadcast speed 0 then pause all other tasks. 
 }
 
-bool RMFT::readSensor(short id) {
+bool RMFT2::readSensor(short id) {
   short s= Layout::getSensor(id); // real hardware sensor (-1 if not exists )
   if (s==1 && diag) DIAG(F("\nRMFT Sensor %d hit\n"),id);
   return s==1;
 }
 
-void RMFT::skipIfBlock() {
+void RMFT2::skipIfBlock() {
   short nest = 1;
   while (nest > 0) {
     progCounter += 2;
-    byte opcode =  pgm_read_byte_near(RMFT::RouteCode+progCounter);;
+    byte opcode =  pgm_read_byte_near(RMFT2::RouteCode+progCounter);;
     switch(opcode) {
       case OPCODE_IF:
       case OPCODE_IFNOT:
@@ -260,11 +275,11 @@ void RMFT::skipIfBlock() {
 
 
 
-/* static */ void RMFT::readLocoCallback(int cv) {
+/* static */ void RMFT2::readLocoCallback(int cv) {
      progtrackLocoId=cv;
 }
 
-void RMFT::loop() {
+void RMFT2::loop() {
      //DIAG(F("\n+ pausing=%x, looptask=%x"),pausingTask,loopTask);
   
   // Round Robin call to a RMFT task each time 
@@ -277,11 +292,11 @@ void RMFT::loop() {
 }    
 
   
-void RMFT::loop2() {
+void RMFT2::loop2() {
    if (delayTime!=0 && millis()-delayStart < delayTime) return;
      
-  byte opcode = pgm_read_byte_near(RMFT::RouteCode+progCounter);
-  byte operand =  pgm_read_byte_near(RMFT::RouteCode+progCounter+1);
+  byte opcode = pgm_read_byte_near(RMFT2::RouteCode+progCounter);
+  byte operand =  pgm_read_byte_near(RMFT2::RouteCode+progCounter+1);
    
   // Attention: Returning from this switch leaves the program counter unchanged.
   //            This is used for unfinished waits for timers or sensors.
@@ -358,7 +373,7 @@ void RMFT::loop2() {
     case OPCODE_RESUME:
          pausingTask=NULL;
          driveLoco(speedo);
-         for (RMFT * t=next; t!=this;t=t->next) if (t->loco >0) t->driveLoco(t->speedo);
+         for (RMFT2 * t=next; t!=this;t=t->next) if (t->loco >0) t->driveLoco(t->speedo);
           break;        
     
     case OPCODE_IF: // do next operand if sensor set
@@ -449,7 +464,7 @@ void RMFT::loop2() {
            {
             // Create new task and transfer loco.....
             // but cheat by swapping prog counters with new task  
-            new RMFT(operand);
+            new RMFT2(operand);
             int swap=loopTask->progCounter;
             loopTask->progCounter=progCounter+2;
             progCounter=swap;
@@ -459,7 +474,7 @@ void RMFT::loop2() {
        case OPCODE_SETLOCO:
            {
             // two bytes of loco address are in the next two OPCODE_PAD operands
-             int operand2 =  pgm_read_byte_near(RMFT::RouteCode+progCounter+3);
+             int operand2 =  pgm_read_byte_near(RMFT2::RouteCode+progCounter+3);
              progCounter+=2; // Skip the extra two instructions
              loco=operand<<7 | operand2;
              speedo=0;
@@ -484,7 +499,7 @@ void RMFT::loop2() {
     progCounter+=2;
 }
 
-void RMFT::delayMe(int delay) {
+void RMFT2::delayMe(int delay) {
      delayTime=delay;
      delayStart=millis();
 }

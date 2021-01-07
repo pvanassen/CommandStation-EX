@@ -19,21 +19,24 @@
 #ifndef RMFTMacros_H
 #define RMFTMacros_H
 
-#define LAYOUT const  PROGMEM  byte Layout::PredefinedLayout[] = {
-#define SERVO_TURNOUT(id,pin,left,right)         LAYOUT_SERVO_TURNOUT,id,pin,left&0xFF,left>>8,right&0xFF,right>>8,
-#define DCC_TURNOUT(id,addr,subaddr,leftActive)  LAYOUT_DCC_TURNOUT,id,,addr&0xFF,addr>>8,subaddr,leftActive,0
-#define PIN_TURNOUT(id,pin,leftActive)           LAYOUT_PIN_TURNOUT,id,pin,leftActive,0,0,0
-#define I2CPIN_TURNOUT(id,pin,leftActive)        LAYOUT_I2CPIN_TURNOUT,id,pin,leftActive,0,0,0
-#define I2C_SENSOR(id,pin,activeWhen)            LAYOUT_I2C_SENSOR,id,pin,activeWhen,0,0,0
-#define PIN_SENSOR(id,pin,activeWhen)            LAYOUT_PIN_SENSOR,id,pin,activeWhen,0,0,0
-#define I2C_OUTPUT(id,pin,activeWhen)            LAYOUT_I2C_OUTPUT,id,pin,activeWhen,0,0,0
-#define PIN_OUTPUT(id,pin,activeWhen)            LAYOUT_PIN_OUTPUT,id,pin,activeWhen,0,0,0
-#define I2C_SIGNAL(id,pinRed,pinGreen,pinAmber)  LAYOUT_I2C_SIGNAL,id,pinRed,pinGreen,pinAmber,0,0
-#define PIN_SIGNAL(id,pinRed,pinGreen,pinAmber)  LAYOUT_PIN_SIGNAL,id,pinRed,pinGreen,pinAmber,0,0
-#define ENDLAYOUT 0,0 };
+enum OPCODE {OPCODE_TL,OPCODE_TR,
+             OPCODE_FWD,OPCODE_REV,OPCODE_SPEED,OPCODE_INVERT_DIRECTION,
+             OPCODE_RESERVE,OPCODE_FREE,
+             OPCODE_AT,OPCODE_AFTER,OPCODE_SET,OPCODE_RESET,
+             OPCODE_IF,OPCODE_IFNOT,OPCODE_ENDIF,OPCODE_IFRANDOM,
+             OPCODE_DELAY,OPCODE_DELAYMINS,OPCODE_RANDWAIT,
+             OPCODE_FON, OPCODE_FOFF,
+             OPCODE_RED,OPCODE_GREEN,OPCODE_AMBER,
+             OPCODE_PAD,OPCODE_FOLLOW,OPCODE_ENDROUTE,
+             OPCODE_PROGTRACK,OPCODE_READ_LOCO1,OPCODE_READ_LOCO2,
+             OPCODE_SCHEDULE,OPCODE_SETLOCO,
+             OPCODE_PAUSE, OPCODE_RESUME, 
+             OPCODE_ROUTE,OPCODE_ENDROUTES
+             };
 
 
-#define ROUTES const  PROGMEM  byte RMFT::RouteCode[] = {
+
+#define ROUTES const  PROGMEM  byte RMFT2::RouteCode[] = {
 #define ROUTE(id)  OPCODE_ROUTE, id, 
 #define ENDROUTE OPCODE_ENDROUTE,0,
 #define ENDROUTES OPCODE_ENDROUTES,0 };
