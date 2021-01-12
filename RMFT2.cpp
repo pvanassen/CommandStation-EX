@@ -54,7 +54,6 @@ RMFT2 * RMFT2::pausingTask=NULL; // Task causing a PAUSE.
 
 /* static */ void RMFT2::begin() { 
   DIAG(F("\nRMFT begin\n"));
-  RMFT2::runMySetup();   //This is created in the RMFT.h when .ino is compiled
   DCCEXParser::setRMFTFilter(RMFT2::ComandFilter);
   new RMFT2(0); // add the startup route
   DIAG(F("\nRMFT ready\n"));

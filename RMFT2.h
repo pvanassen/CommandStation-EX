@@ -28,7 +28,6 @@
     RMFT2(byte route);
     ~RMFT2();
     static void readLocoCallback(int cv);
-    static void runMySetup();
   private: 
     static void ComandFilter(Print * stream, byte & opcode, byte & paramCount, int p[]);
     static bool parseSlash(Print * stream, byte & paramCount, int p[]) ;

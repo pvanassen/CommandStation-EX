@@ -9,15 +9,6 @@ class RMFT {
    static void inline loop() {RMFT2::loop();}
 };
 
-void RMFT2::runMySetup() {
-       RMFT2::setupCommands(
-       #if __has_include ( "mySetup.h")
-        #define SETUP(cmd) F(cmd), 
-        #include "mySetup.h"
-        #undef SETUP
-       #endif
-       NULL);
-}
 
 #if __has_include ( "myAutomation.h")
   #include "myAutomation.h"
