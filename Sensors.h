@@ -20,6 +20,7 @@
 #define Sensor_h
 
 #include "Arduino.h"
+#include "BlockOccupationDetector.h"
 
 #define  SENSOR_DECAY  0.03
 
@@ -32,6 +33,7 @@ struct SensorData {
 struct Sensor{
   static Sensor *firstSensor;
   static Sensor *readingSensor;
+  static BlockOccupationDetector *blockOccupationDetector;
   SensorData data;
   boolean active;
   byte latchdelay;
@@ -43,6 +45,8 @@ struct Sensor{
   static bool remove(int);  
   static void checkAll(Print *);
   static void printAll(Print *);
+
+  static Print *stream;
 }; // Sensor
 
 #endif

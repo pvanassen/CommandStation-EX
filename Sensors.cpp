@@ -69,7 +69,6 @@ decide to ignore the <q ID> return and only react to <Q ID> triggers.
 #include "Sensors.h"
 #include "EEStore.h"
 
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // checks one defined sensors and prints _changed_ sensor state
@@ -80,6 +79,12 @@ decide to ignore the <q ID> return and only react to <Q ID> triggers.
 ///////////////////////////////////////////////////////////////////////////////
 
 void Sensor::checkAll(Print *stream){
+  Sensor::stream = stream;
+  blockOccupationDetector->tick();
+  if (blockOccupationDetector->lastBlock.occupied && stream != NULL) {
+    StringFormatter::send(stream, F("<%c %d>"), blockOccupationDetector->lastBlock.occupied ? 'Q' : 'q',
+                          blockOccupationDetector->lastBlock.absoluteBlock);
+  }
 
   if (firstSensor == NULL) return;
   if (readingSensor == NULL) readingSensor=firstSensor;
@@ -114,6 +119,10 @@ void Sensor::checkAll(Print *stream){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Sensor::printAll(Print *stream){
+  bool* states = blockOccupationDetector->getLastKnownStates();
+  for (int block=0;block!=blockOccupationDetector->firstAvailableSensor();block++) {
+      StringFormatter::send(stream, F("<%c %d>"), states[block] ? 'Q' : 'q', block);
+  }
 
   for(Sensor * tt=firstSensor;tt!=NULL;tt=tt->nextSensor){
     if (stream != NULL)
@@ -125,6 +134,10 @@ void Sensor::printAll(Print *stream){
 
 Sensor *Sensor::create(int snum, int pin, int pullUp){
   Sensor *tt;
+  // Reserved for block detection
+  if (snum < blockOccupationDetector->firstAvailableSensor()) {
+      return NULL; // New sensor conflicts with BlockOccupationDetector
+  }
 
   if(firstSensor==NULL){
     firstSensor=(Sensor *)calloc(1,sizeof(Sensor));
@@ -155,6 +168,9 @@ Sensor *Sensor::create(int snum, int pin, int pullUp){
 
 Sensor* Sensor::get(int n){
   Sensor *tt;
+  if (n < blockOccupationDetector->firstAvailableSensor()) {
+      return NULL; // blockOccupationDetector hack
+  }
   for(tt=firstSensor;tt!=NULL && tt->data.snum!=n;tt=tt->nextSensor);
   return tt ;
 }
@@ -163,7 +179,11 @@ Sensor* Sensor::get(int n){
 bool Sensor::remove(int n){
   Sensor *tt,*pp=NULL;
 
-  for(tt=firstSensor;tt!=NULL && tt->data.snum!=n;pp=tt,tt=tt->nextSensor);
+    if (n < blockOccupationDetector->firstAvailableSensor()) {
+        return false; // blockOccupationDetector hack
+    }
+
+    for(tt=firstSensor;tt!=NULL && tt->data.snum!=n;pp=tt,tt=tt->nextSensor);
 
   if (tt==NULL)  return false;
   
@@ -181,6 +201,9 @@ bool Sensor::remove(int n){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Sensor::load(){
+  blockOccupationDetector->addDetector(48);
+  blockOccupationDetector->addDetector(50);
+  blockOccupationDetector->addDetector(52);
   struct SensorData data;
   Sensor *tt;
 
@@ -211,3 +234,4 @@ void Sensor::store(){
 
 Sensor *Sensor::firstSensor=NULL;
 Sensor *Sensor::readingSensor=NULL;
+BlockOccupationDetector *Sensor::blockOccupationDetector = new BlockOccupationDetector(22, 24, 26, A0);
