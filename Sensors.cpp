@@ -80,7 +80,6 @@ decide to ignore the <q ID> return and only react to <Q ID> triggers.
 ///////////////////////////////////////////////////////////////////////////////
 
 void Sensor::checkAll(Print *stream){
-  DIAG(F("Tick"));
   blockOccupationDetector->tick();
   if (blockOccupationDetector->lastBlock.occupied && stream != NULL) {
     StringFormatter::send(stream, F("<%c %d>"), blockOccupationDetector->lastBlock.occupied ? 'Q' : 'q',
