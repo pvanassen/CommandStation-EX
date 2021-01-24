@@ -81,9 +81,9 @@ decide to ignore the <q ID> return and only react to <Q ID> triggers.
 
 void Sensor::checkAll(Print *stream){
   blockOccupationDetector->tick();
-  if (blockOccupationDetector->lastBlock.occupied && stream != NULL) {
+  if (blockOccupationDetector->lastBlock.changed && stream != NULL) {
     StringFormatter::send(stream, F("<%c %d>"), blockOccupationDetector->lastBlock.occupied ? 'Q' : 'q',
-                          blockOccupationDetector->lastBlock.absoluteBlock);
+                          blockOccupationDetector->lastBlock.absoluteBlock + 1);
   }
 
   if (firstSensor == NULL) return;
@@ -121,7 +121,7 @@ void Sensor::checkAll(Print *stream){
 void Sensor::printAll(Print *stream){
   bool* states = blockOccupationDetector->getLastKnownStates();
   for (int block=0;block!=blockOccupationDetector->firstAvailableSensor();block++) {
-      StringFormatter::send(stream, F("<%c %d>"), states[block] ? 'Q' : 'q', block);
+      StringFormatter::send(stream, F("<%c %d>"), states[block] ? 'Q' : 'q', block + 1);
   }
 
   for(Sensor * tt=firstSensor;tt!=NULL;tt=tt->nextSensor){
@@ -201,9 +201,6 @@ bool Sensor::remove(int n){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Sensor::load(){
-  blockOccupationDetector->addDetector(48);
-  blockOccupationDetector->addDetector(50);
-  blockOccupationDetector->addDetector(52);
   struct SensorData data;
   Sensor *tt;
 
@@ -234,4 +231,6 @@ void Sensor::store(){
 
 Sensor *Sensor::firstSensor=NULL;
 Sensor *Sensor::readingSensor=NULL;
-BlockOccupationDetector *Sensor::blockOccupationDetector = new BlockOccupationDetector(22, 24, 26, A13, &Serial);
+BlockOccupationDetector *Sensor::blockOccupationDetector = new BlockOccupationDetector(22, 24, 26, A13,
+                                                                                       3,
+                                                                                       new byte[3] {48, 50, 52});
