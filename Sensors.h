@@ -45,8 +45,6 @@ struct Sensor{
   static bool remove(int);  
   static void checkAll(Print *);
   static void printAll(Print *);
-
-  static Print *stream;
 }; // Sensor
 
 #endif

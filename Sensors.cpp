@@ -68,6 +68,7 @@ decide to ignore the <q ID> return and only react to <Q ID> triggers.
 #include "StringFormatter.h"
 #include "Sensors.h"
 #include "EEStore.h"
+#include "DIAG.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -79,7 +80,7 @@ decide to ignore the <q ID> return and only react to <Q ID> triggers.
 ///////////////////////////////////////////////////////////////////////////////
 
 void Sensor::checkAll(Print *stream){
-  Sensor::stream = stream;
+  DIAG(F("Tick"));
   blockOccupationDetector->tick();
   if (blockOccupationDetector->lastBlock.occupied && stream != NULL) {
     StringFormatter::send(stream, F("<%c %d>"), blockOccupationDetector->lastBlock.occupied ? 'Q' : 'q',
@@ -234,4 +235,4 @@ void Sensor::store(){
 
 Sensor *Sensor::firstSensor=NULL;
 Sensor *Sensor::readingSensor=NULL;
-BlockOccupationDetector *Sensor::blockOccupationDetector = new BlockOccupationDetector(22, 24, 26, A0);
+BlockOccupationDetector *Sensor::blockOccupationDetector = new BlockOccupationDetector(22, 24, 26, A13, &Serial);
