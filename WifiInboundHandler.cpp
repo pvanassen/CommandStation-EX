@@ -3,6 +3,7 @@
 #include "RingStream.h"
 #include "CommandDistributor.h"
 #include "DIAG.h"
+#include "BroadcastPrint.h"
 
 WifiInboundHandler * WifiInboundHandler::singleton;
 
@@ -20,6 +21,7 @@ WifiInboundHandler::WifiInboundHandler(Stream * ESStream) {
   clientPendingCIPSEND=-1;
   inboundRing=new RingStream(INBOUND_RING);
   outboundRing=new RingStream(OUTBOUND_RING);
+  BroadcastPrint::getInstance()->setWifi(outboundRing);
   pendingCipsend=false;
 } 
 

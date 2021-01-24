@@ -11,6 +11,7 @@
 
 #include "config.h"
 #include "DCCEX.h"
+#include "BroadcastPrint.h"
 
 // Create a serial command parser for the USB connection, 
 // This supports JMRI or manual diagnostics and commands
@@ -24,6 +25,8 @@ void setup()
   // Responsibility 1: Start the usb connection for diagnostics
   // This is normally Serial but uses SerialUSB on a SAMD processor
   Serial.begin(115200);
+  BroadcastPrint::getInstance()->setSerial(&Serial);
+
   DIAG(F("DCC++ EX v%S"),F(VERSION));
    
   CONDITIONAL_LCD_START {
@@ -53,7 +56,8 @@ void setup()
   // waveform generation.  e.g.  DCC::begin(STANDARD_MOTOR_SHIELD,2); to use timer 2
 
   DCC::begin(MOTOR_SHIELD_TYPE); 
-  LCD(1,F("Ready")); 
+  LCD(1,F("Ready"));
+
 }
 
 void loop()

@@ -30,6 +30,7 @@
 
 #include "EEStore.h"
 #include "DIAG.h"
+#include "BroadcastPrint.h"
 
 // These keywords are used in the <1> command. The number is what you get if you use the keyword as a parameter.
 // To discover new keyword numbers , use the <$ YOURKEYWORD> command
@@ -99,7 +100,7 @@ void DCCEXParser::loop(Stream &stream)
             buffer[bufferLength++] = ch;
         }
     }
-    Sensor::checkAll(&stream); // Update and print changes
+    Sensor::checkAll(BroadcastPrint::getInstance()); // Update and print changes
 }
 
 int DCCEXParser::splitValues(int result[MAX_PARAMS], const byte *cmd)

@@ -21,6 +21,7 @@
 #include "EthernetInterface.h"
 #include "DIAG.h"
 #include "CommandDistributor.h"
+#include "BroadcastPrint.h"
 
 EthernetInterface * EthernetInterface::singleton=NULL;
 /**
@@ -72,7 +73,8 @@ EthernetInterface::EthernetInterface()
     LCD(4,F("IP: %d.%d.%d.%d"), ip[0], ip[1], ip[2], ip[3]);
     LCD(5,F("Port:%d"), LISTEN_PORT);
 
-    outboundRing=new RingStream(OUTBOUND_RING_SIZE);     
+    outboundRing=new RingStream(OUTBOUND_RING_SIZE);
+    BroadcastPrint::getInstance()->setEthernet(outboundRing);
 }
 
 /**
